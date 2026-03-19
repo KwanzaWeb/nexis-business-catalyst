@@ -163,7 +163,9 @@
   }
 
   .nexis-message-user {
-    @apply ml-auto border-primary/30 bg-primary/12;
+    @apply ml-auto;
+    border-color: hsl(var(--primary) / 0.3);
+    background-color: hsl(var(--primary) / 0.12);
   }
 
   .nexis-message-label {
