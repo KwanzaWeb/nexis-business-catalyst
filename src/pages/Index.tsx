@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUpRight, Bot, LoaderCircle, Sparkles, Target } from "lucide-react";
+import { ArrowDownToLine, ArrowUpRight, Bot, LoaderCircle, Sparkles, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { downloadTextAsPdf } from "@/lib/utils";
 import { toast } from "sonner";
 
 type ChatMessage = {
@@ -62,6 +63,17 @@ const Index = () => {
 
   const canSubmit = useMemo(() => idea.trim().length >= 10 && !isLoading, [idea, isLoading]);
 
+  const latestStrategy = useMemo(
+    () =>
+      [...messages]
+        .reverse()
+        .find(
+          (message) =>
+            message.role === "assistant" && message.content !== starterMessages[0].content,
+        )?.content ?? null,
+    [messages],
+  );
+
   const handleGenerate = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmedIdea = idea.trim();
@@ -96,6 +108,21 @@ const Index = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDownloadPdf = () => {
+    if (!latestStrategy) {
+      toast.error("Gere uma estratégia antes de baixar o PDF.");
+      return;
+    }
+
+    downloadTextAsPdf({
+      title: "Estratégia de negócio — Nexis",
+      content: latestStrategy,
+      fileName: "nexis-estrategia.pdf",
+    });
+
+    toast.success("PDF gerado com sucesso.");
   };
 
   return (
@@ -149,7 +176,19 @@ const Index = () => {
               <p className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Nexis</p>
               <h2 className="mt-2 text-2xl font-semibold text-foreground">Digite sua ideia de negócio</h2>
             </div>
-            <div className="nexis-dot" aria-hidden="true" />
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadPdf}
+                disabled={!latestStrategy || isLoading}
+              >
+                <ArrowDownToLine className="h-4 w-4" />
+                Baixar PDF
+              </Button>
+              <div className="nexis-dot" aria-hidden="true" />
+            </div>
           </div>
 
           <div className="nexis-suggestions" aria-label="Sugestões de ideias">
