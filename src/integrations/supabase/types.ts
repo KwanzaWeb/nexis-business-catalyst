@@ -14,33 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      analyses: {
-        Row: {
-          business_idea: string
-          created_at: string
-          fofa_content: string
-          full_response: string
-          id: string
-          marketing_plan: string
-        }
-        Insert: {
-          business_idea: string
-          created_at?: string
-          fofa_content: string
-          full_response: string
-          id?: string
-          marketing_plan: string
-        }
-        Update: {
-          business_idea?: string
-          created_at?: string
-          fofa_content?: string
-          full_response?: string
-          id?: string
-          marketing_plan?: string
-        }
-        Relationships: []
-      }
       consultas: {
         Row: {
           business_idea: string
