@@ -12,7 +12,7 @@ type DownloadPdfOptions = {
   title: string;
 };
 
-export function downloadTextAsPdf({ content, fileName = "nexis-estrategia.pdf", title }: DownloadPdfOptions) {
+export function downloadTextAsPdf({ content, fileName = "ismabot-estrategia.pdf", title }: DownloadPdfOptions) {
   const doc = new jsPDF({ format: "a4", unit: "pt" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -40,7 +40,7 @@ export function downloadTextAsPdf({ content, fileName = "nexis-estrategia.pdf", 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
   doc.setTextColor(110, 118, 136);
-  doc.text(`Gerado pelo Nexis em ${new Date().toLocaleString("pt-BR")}`, margin, cursorY);
+  doc.text(`Gerado pelo IsmaBot em ${new Date().toLocaleString("pt-BR")}`, margin, cursorY);
 
   cursorY += 28;
   doc.setTextColor(30, 41, 59);
@@ -64,4 +64,3 @@ export function downloadTextAsPdf({ content, fileName = "nexis-estrategia.pdf", 
 
   doc.save(fileName.replace(/[^a-z0-9\-_.]/gi, "-").toLowerCase());
 }
-
