@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDownToLine, ArrowUpRight, Bot, LoaderCircle, Sparkles, Target } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ArrowDownToLine, ArrowUpRight, Bot, History, LoaderCircle, LogOut, Sparkles, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { downloadTextAsPdf } from "@/lib/utils";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 type ChatMessage = {
   role: "assistant" | "user";
@@ -17,7 +20,7 @@ const starterMessages: ChatMessage[] = [
   {
     role: "assistant",
     content:
-      "Olá, eu sou o Nexis. Me conte sua ideia de negócio e eu vou montar uma análise FOFA detalhada e um plano de marketing de 50 dias dividido por semanas.",
+      "Olá, eu sou o IsmaBot. Me conte sua ideia de negócio e eu vou montar uma análise FOFA detalhada e um plano de marketing de 50 dias dividido por semanas.",
   },
 ];
 
@@ -27,7 +30,7 @@ const suggestedIdeas = [
   "Clínica digital focada em saúde feminina",
 ];
 
-const callNexis = async (idea: string, history: ChatMessage[]) => {
+const callIsmaBot = async (idea: string, history: ChatMessage[]) => {
   const response = await fetch(FUNCTION_URL, {
     method: "POST",
     headers: {
@@ -51,11 +54,34 @@ const callNexis = async (idea: string, history: ChatMessage[]) => {
   return payload.reply as string;
 };
 
+const saveConsulta = async (userId: string, idea: string, fullResponse: string) => {
+  // Simple extraction: split by FOFA section vs marketing plan
+  const fofaMatch = fullResponse.match(/(?:análise\s*fofa|swot|forças)[^]*?(?=plano\s*de\s*marketing|semana\s*1)/i);
+  const fofa = fofaMatch ? fofaMatch[0].trim() : fullResponse.substring(0, Math.floor(fullResponse.length / 2));
+  const marketing = fullResponse.substring(fofa.length).trim() || fullResponse.substring(Math.floor(fullResponse.length / 2));
+
+  await supabase.from("consultas").insert({
+    user_id: userId,
+    business_idea: idea,
+    fofa_content: fofa,
+    marketing_plan: marketing,
+    full_response: fullResponse,
+  });
+};
+
 const Index = () => {
+  const { user, signOut, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<ChatMessage[]>(starterMessages);
   const [idea, setIdea] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/auth");
+    }
+  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -91,8 +117,15 @@ const Index = () => {
     setIsLoading(true);
 
     try {
-      const reply = await callNexis(trimmedIdea, nextMessages);
+      const reply = await callIsmaBot(trimmedIdea, nextMessages);
       setMessages([...nextMessages, { role: "assistant", content: reply }]);
+
+      // Save to database
+      if (user) {
+        saveConsulta(user.id, trimmedIdea, reply).catch(() => {
+          // silent - don't block UX
+        });
+      }
     } catch (error) {
       const typedError = error as Error & { status?: number };
 
@@ -101,7 +134,7 @@ const Index = () => {
       } else if (typedError.status === 402) {
         toast.error("O limite de uso da IA foi atingido. Adicione créditos para continuar.");
       } else {
-        toast.error(typedError.message || "O Nexis não conseguiu responder agora.");
+        toast.error(typedError.message || "O IsmaBot não conseguiu responder agora.");
       }
 
       setMessages(messages);
@@ -117,26 +150,34 @@ const Index = () => {
     }
 
     downloadTextAsPdf({
-      title: "Estratégia de negócio — Nexis",
+      title: "Estratégia de negócio — IsmaBot",
       content: latestStrategy,
-      fileName: "nexis-estrategia.pdf",
+      fileName: "ismabot-estrategia.pdf",
     });
 
     toast.success("PDF gerado com sucesso.");
   };
 
+  if (authLoading) {
+    return (
+      <main className="ismabot-shell flex items-center justify-center">
+        <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
+      </main>
+    );
+  }
+
   return (
-    <main className="nexis-shell">
-      <section className="nexis-grid">
-        <div className="nexis-hero">
-          <div className="nexis-badge">
+    <main className="ismabot-shell">
+      <section className="ismabot-grid">
+        <div className="ismabot-hero">
+          <div className="ismabot-badge">
             <Sparkles className="h-4 w-4" />
             Consultor virtual de estratégia
           </div>
 
           <div className="space-y-6">
             <h1 className="text-balance text-4xl font-semibold tracking-tight text-foreground md:text-6xl">
-              Nexis transforma uma ideia em direção estratégica acionável.
+              IsmaBot transforma uma ideia em direção estratégica acionável.
             </h1>
             <p className="max-w-2xl text-lg leading-8 text-muted-foreground">
               Digite sua ideia de negócio e receba um diagnóstico FOFA completo, além de um plano de marketing de 50 dias organizado por semanas.
@@ -144,39 +185,43 @@ const Index = () => {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            <article className="nexis-stat-card">
+            <article className="ismabot-stat-card">
               <Bot className="h-5 w-5 text-primary" />
               <div>
-                <h2 className="nexis-stat-title">FOFA detalhada</h2>
-                <p className="nexis-stat-copy">Forças, fraquezas, oportunidades e ameaças com profundidade prática.</p>
+                <h2 className="ismabot-stat-title">FOFA detalhada</h2>
+                <p className="ismabot-stat-copy">Forças, fraquezas, oportunidades e ameaças com profundidade prática.</p>
               </div>
             </article>
 
-            <article className="nexis-stat-card">
+            <article className="ismabot-stat-card">
               <Target className="h-5 w-5 text-primary" />
               <div>
-                <h2 className="nexis-stat-title">50 dias por semanas</h2>
-                <p className="nexis-stat-copy">Plano de marketing com foco em priorização, canais e execução.</p>
+                <h2 className="ismabot-stat-title">50 dias por semanas</h2>
+                <p className="ismabot-stat-copy">Plano de marketing com foco em priorização, canais e execução.</p>
               </div>
             </article>
 
-            <article className="nexis-stat-card sm:col-span-2 xl:col-span-1">
+            <article className="ismabot-stat-card sm:col-span-2 xl:col-span-1">
               <ArrowUpRight className="h-5 w-5 text-primary" />
               <div>
-                <h2 className="nexis-stat-title">Sem banco de dados</h2>
-                <p className="nexis-stat-copy">Tudo acontece na sessão atual, sem salvar histórico no backend.</p>
+                <h2 className="ismabot-stat-title">Histórico salvo</h2>
+                <p className="ismabot-stat-copy">Suas análises ficam salvas na sua conta para consultar quando quiser.</p>
               </div>
             </article>
           </div>
         </div>
 
-        <section className="nexis-panel" aria-label="Chat com o Nexis">
-          <div className="nexis-panel-header">
+        <section className="ismabot-panel" aria-label="Chat com o IsmaBot">
+          <div className="ismabot-panel-header">
             <div>
-              <p className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Nexis</p>
+              <p className="text-sm uppercase tracking-[0.24em] text-muted-foreground">IsmaBot</p>
               <h2 className="mt-2 text-2xl font-semibold text-foreground">Digite sua ideia de negócio</h2>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => navigate("/historico")}>
+                <History className="h-4 w-4" />
+                Histórico
+              </Button>
               <Button
                 type="button"
                 variant="outline"
@@ -185,18 +230,21 @@ const Index = () => {
                 disabled={!latestStrategy || isLoading}
               >
                 <ArrowDownToLine className="h-4 w-4" />
-                Baixar PDF
+                PDF
               </Button>
-              <div className="nexis-dot" aria-hidden="true" />
+              <Button type="button" variant="ghost" size="sm" onClick={signOut}>
+                <LogOut className="h-4 w-4" />
+              </Button>
+              <div className="ismabot-dot" aria-hidden="true" />
             </div>
           </div>
 
-          <div className="nexis-suggestions" aria-label="Sugestões de ideias">
+          <div className="ismabot-suggestions" aria-label="Sugestões de ideias">
             {suggestedIdeas.map((suggestion) => (
               <button
                 key={suggestion}
                 type="button"
-                className="nexis-chip"
+                className="ismabot-chip"
                 onClick={() => setIdea(suggestion)}
               >
                 {suggestion}
@@ -204,20 +252,20 @@ const Index = () => {
             ))}
           </div>
 
-          <div className="nexis-chat" role="log" aria-live="polite">
+          <div className="ismabot-chat" role="log" aria-live="polite">
             {messages.map((message, index) => (
               <article
                 key={`${message.role}-${index}`}
-                className={message.role === "assistant" ? "nexis-message-assistant" : "nexis-message-user"}
+                className={message.role === "assistant" ? "ismabot-message-assistant" : "ismabot-message-user"}
               >
-                <span className="nexis-message-label">{message.role === "assistant" ? "Nexis" : "Você"}</span>
+                <span className="ismabot-message-label">{message.role === "assistant" ? "IsmaBot" : "Você"}</span>
                 <p className="whitespace-pre-wrap text-sm leading-7 text-foreground/95">{message.content}</p>
               </article>
             ))}
 
             {isLoading && (
-              <article className="nexis-message-assistant">
-                <span className="nexis-message-label">Nexis</span>
+              <article className="ismabot-message-assistant">
+                <span className="ismabot-message-label">IsmaBot</span>
                 <div className="flex items-center gap-3 text-sm text-muted-foreground">
                   <LoaderCircle className="h-4 w-4 animate-spin" />
                   Estruturando sua análise estratégica...
@@ -227,7 +275,7 @@ const Index = () => {
             <div ref={chatEndRef} />
           </div>
 
-          <form className="nexis-form" onSubmit={handleGenerate}>
+          <form className="ismabot-form" onSubmit={handleGenerate}>
             <label htmlFor="business-idea" className="sr-only">
               Ideia de negócio
             </label>
@@ -240,7 +288,7 @@ const Index = () => {
             />
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-muted-foreground">
-                O Nexis responde com análise FOFA + plano semanal de marketing.
+                O IsmaBot responde com análise FOFA + plano semanal de marketing.
               </p>
               <Button type="submit" size="lg" className="min-w-44" disabled={!canSubmit}>
                 {isLoading ? "Analisando..." : "Gerar estratégia"}
