@@ -20,7 +20,7 @@ const requestSchema = z.object({
     .default([]),
 });
 
-const systemPrompt = `Você é Nexis, um consultor virtual de IA especializado em estratégia de negócios e marketing.
+const systemPrompt = `Você é IsmaBot, um consultor virtual de IA especializado em estratégia de negócios e marketing.
 
 Sua missão:
 - Pedir e compreender a ideia de negócio do usuário.
