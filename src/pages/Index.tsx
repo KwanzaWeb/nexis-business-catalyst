@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowDownToLine, ArrowUpRight, Bot, History, LoaderCircle, LogOut, Sparkles, Target } from "lucide-react";
+import { ArrowDownToLine, ArrowUpRight, Bot, History, LayoutGrid, LoaderCircle, LogOut, ShoppingCart, Sparkles, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { downloadTextAsPdf } from "@/lib/utils";
