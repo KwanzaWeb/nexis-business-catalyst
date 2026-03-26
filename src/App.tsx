@@ -7,6 +7,8 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import History from "./pages/History";
+import SiteBuilder from "./pages/SiteBuilder";
+import SalesSimulator from "./pages/SalesSimulator";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
