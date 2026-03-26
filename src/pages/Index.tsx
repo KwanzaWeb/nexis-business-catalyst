@@ -218,6 +218,14 @@ const Index = () => {
               <h2 className="mt-2 text-2xl font-semibold text-foreground">Digite sua ideia de negócio</h2>
             </div>
             <div className="flex items-center gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => navigate("/construtor")}>
+                <LayoutGrid className="h-4 w-4" />
+                Construtor
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => navigate("/simulador")}>
+                <ShoppingCart className="h-4 w-4" />
+                Vendas
+              </Button>
               <Button type="button" variant="outline" size="sm" onClick={() => navigate("/historico")}>
                 <History className="h-4 w-4" />
                 Histórico
